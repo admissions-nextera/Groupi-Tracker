@@ -114,7 +114,9 @@ func SearchHandler(resp http.ResponseWriter, req *http.Request) {
 			results = append(results, a)
 		}
 	}
-
+	if results == nil {
+		results = []Artist{}
+	}
 	resp.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(resp).Encode(results)
 }
