@@ -47,39 +47,41 @@ func ArtistHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	artist, err := getArtist(id)
-	if err != nil {
-		http.Error(resp, "Not Found", http.StatusNotFound)
+	if id < 1 || id > 52 {
+		http.Error(resp, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	rel, err := getRelations()
-	if err != nil {
-		log.Println(err)
-		http.Error(resp, "Internal Server Error", 500)
-		return
-	}
-
-	var relation RelationItem
-	for _, item := range rel.Index {
-		if item.ID == id {
-			relation = item
+	var selectedArtist *Artist
+	for _, a := range ArtistCache {
+		if a.ID == id {
+			selectedArtist = &a
 			break
 		}
 	}
 
+	if selectedArtist == nil {
+		http.Error(resp, "Artist Not Found", http.StatusNotFound)
+		return
+	}
+
+	relation, exists := RelationCache[id]
+	if !exists {
+		log.Printf("Warning: No relation found for artist %d", id)
+	}
+
+	// 3. Prepare data for the template
 	data := struct {
 		Artist   *Artist
 		Relation RelationItem
 	}{
-		Artist:   artist,
+		Artist:   selectedArtist,
 		Relation: relation,
 	}
 
 	if err := ArtistTemplate.Execute(resp, data); err != nil {
-		log.Println(err)
+		log.Println("Template error:", err)
 		http.Error(resp, "Internal Server Error", 500)
-		return
 	}
 }
 

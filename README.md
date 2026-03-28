@@ -34,7 +34,7 @@ The search functionality demonstrates a complete client-server loop:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/groupie-tracker.git
+    git clone https://github.com/Anasmoner2022/groupie-tracker.git
     ```
 2.  **Navigate to the directory:**
     ```bash

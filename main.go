@@ -18,5 +18,5 @@ func main() {
 	http.HandleFunc("/search", SearchHandler)
 
 	log.Println("Server running at http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
