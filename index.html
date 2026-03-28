@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groupie Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --black:      #0a0a0a;
+            --surface:    #111111;
+            --surface2:   #181818;
+            --border:     #1e1e1e;
+            --gold:       #c8a84b;
+            --gold-dim:   #8a7033;
+            --gold-faint: #1e1a0a;
+            --white:      #f0ece3;
+            --muted:      #6b6560;
+            --radius:     4px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--black);
+            color: var(--white);
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 300;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        .skip-link {
+            position: absolute; top: -40px; left: 1rem; z-index: 200;
+            background: var(--gold); color: var(--black);
+            padding: 0.5rem 1rem; border-radius: var(--radius);
+            font-size: 0.85rem; font-weight: 500; text-decoration: none;
+            transition: top 0.15s;
+        }
+        .skip-link:focus { top: 0.5rem; }
+
+        :focus-visible {
+            outline: 2px solid var(--gold);
+            outline-offset: 2px;
+        }
+
+        header {
+            position: relative; z-index: 10;
+            padding: 2.5rem 4rem 1.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-top {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .brand-tag {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--gold);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .brand-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(2.8rem, 5vw, 4.5rem);
+            line-height: 0.9;
+            letter-spacing: 0.04em;
+        }
+
+        .kbd-hint {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.64rem;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+        }
+
+        kbd {
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.1em 0.4em;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.64rem;
+            color: var(--white);
+            line-height: 1.5;
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-wrap {
+            position: relative;
+            flex: 1; max-width: 380px; min-width: 200px;
+        }
+
+        .search-icon {
+            position: absolute; left: 0.85rem; top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none; color: var(--muted);
+        }
+
+        .search-box {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--white);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            padding: 0.7rem 2.6rem 0.7rem 2.8rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-box:focus { border-color: var(--gold-dim); }
+        .search-box::placeholder { color: var(--muted); }
+
+        .clear-btn {
+            position: absolute; right: 0.5rem; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            color: var(--muted);
+            width: 22px; height: 22px;
+            display: none; align-items: center; justify-content: center;
+            border-radius: 50%;
+            font-size: 1.1rem; line-height: 1;
+            transition: color 0.2s, background 0.2s;
+        }
+        .clear-btn:hover { color: var(--white); background: var(--surface2); }
+        .clear-btn.visible { display: flex; }
+
+        .sort-group {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .sort-label {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            margin-right: 0.2rem;
+        }
+
+        .sort-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.08em;
+            padding: 0.4rem 0.7rem;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
+        }
+        .sort-btn:hover { color: var(--white); background: var(--surface2); }
+        .sort-btn.active {
+            color: var(--gold);
+            border-color: var(--gold-dim);
+            background: var(--gold-faint);
+        }
+
+        .meta-bar {
+            position: relative; z-index: 10;
+            padding: 0.85rem 4rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--muted);
+            letter-spacing: 0.12em;
+        }
+
+        #result-count { color: var(--gold); }
+
+        /* Rule 3: spinner shown during fetch */
+        .spinner {
+            display: none;
+            width: 14px; height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        .spinner.active { display: inline-block; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        main {
+            position: relative; z-index: 10;
+            padding: 2.5rem 4rem 5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .card {
+            display: block;
+            text-decoration: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            position: relative;
+            transition: border-color 0.22s, transform 0.22s, box-shadow 0.22s;
+            animation: fadeUp 0.45s both;
+            outline: none;
+        }
+
+        .card:hover,
+        .card:focus-visible {
+            border-color: var(--gold-dim);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 24px rgba(200, 168, 75, 0.07);
+        }
+
+        .card:focus-visible {
+            outline: 2px solid var(--gold);
+            outline-offset: 2px;
+        }
+
+        .card:hover .card-img { transform: scale(1.05); }
+
+        .card-img-wrap {
+            aspect-ratio: 1;
+            overflow: hidden;
+            background: var(--surface2);
+            position: relative;
+        }
+
+        .card-img-wrap.loading::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            animation: shimmer 1.6s infinite;
+        }
+
+        @keyframes shimmer {
+            from { transform: translateX(-100%); }
+            to   { transform: translateX(100%); }
+        }
+
+        .card-img {
+            width: 100%; height: 100%;
+            object-fit: cover; display: block;
+            transition: transform 0.5s ease, opacity 0.35s;
+            filter: saturate(0.7) contrast(1.1);
+            opacity: 0;
+        }
+        .card-img.loaded { opacity: 1; }
+
+        .card-body { padding: 0.85rem 1rem 1rem; }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+
+        .card-id {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.62rem;
+            color: var(--gold);
+            letter-spacing: 0.15em;
+        }
+
+        .card-year {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.62rem;
+            color: var(--muted);
+        }
+
+        .card-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.3rem;
+            letter-spacing: 0.05em;
+            color: var(--white);
+            line-height: 1;
+            margin-bottom: 0.45rem;
+        }
+
+        .card-members {
+            font-size: 0.74rem;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: var(--gold-dim);
+            flex-shrink: 0;
+        }
+
+        .empty {
+            display: none;
+            grid-column: 1 / -1;
+            padding: 5rem 0;
+            text-align: center;
+        }
+
+        .empty-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.6rem;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-sub {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+        }
+
+        /* Rule 5: fetch error banner */
+        .error-banner {
+            display: none;
+            grid-column: 1 / -1;
+            padding: 1rem 1.25rem;
+            background: #1a0a0a;
+            border: 1px solid #5c1a1a;
+            border-radius: var(--radius);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.72rem;
+            color: #c0392b;
+            letter-spacing: 0.08em;
+        }
+        .error-banner.visible { display: block; }
+
+        footer {
+            position: relative; z-index: 10;
+            border-top: 1px solid var(--border);
+            padding: 1.2rem 4rem;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.67rem;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            header, .meta-bar, main, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+            .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+            .kbd-hint { display: none; }
+            .sort-group { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to artists</a>
+
+<header>
+    <div class="header-top">
+        <div>
+            <div class="brand-tag">Live Music Database</div>
+            <div class="brand-name">Groupie<br>Tracker</div>
+        </div>
+        <span class="kbd-hint" aria-label="Keyboard shortcuts">
+            <kbd>/</kbd> search &nbsp;·&nbsp;
+            <kbd>↑ ↓</kbd> navigate &nbsp;·&nbsp;
+            <kbd>↵</kbd> open &nbsp;·&nbsp;
+            <kbd>Esc</kbd> clear
+        </span>
+    </div>
+
+    <div class="controls-row">
+        <div class="search-wrap">
+            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+                class="search-box"
+                type="search"
+                id="search"
+                placeholder="Search artists…"
+                autocomplete="off"
+                aria-label="Search artists"
+                aria-controls="grid"
+            >
+            <button class="clear-btn" id="clear-btn" aria-label="Clear search" title="Clear (Esc)">×</button>
+        </div>
+
+        <div class="sort-group" role="group" aria-label="Sort artists by">
+            <span class="sort-label">SORT</span>
+            <button class="sort-btn active" data-sort="default" aria-pressed="true">Default</button>
+            <button class="sort-btn" data-sort="az"   aria-pressed="false">A → Z</button>
+            <button class="sort-btn" data-sort="za"   aria-pressed="false">Z → A</button>
+            <button class="sort-btn" data-sort="year" aria-pressed="false">Year</button>
+        </div>
+    </div>
+</header>
+
+<div class="meta-bar">
+    <span>ALL ARTISTS</span>
+    <span role="status" aria-live="polite" aria-atomic="true" style="display:flex;align-items:center;gap:0.6rem;">
+        <span class="spinner" id="spinner"></span>
+        <span id="result-count">{{len .}}</span> / {{len .}} results
+    </span>
+</div>
+
+<main id="main">
+    <div class="grid" id="grid">
+
+        {{range .}}
+        <a
+            class="card"
+            href="/artist?id={{.ID}}"
+            data-name="{{.Name}}"
+            data-year="{{.CreationDate}}"
+            data-members="{{len .Members}}"
+            data-id="{{.ID}}"
+            tabindex="0"
+            aria-label="{{.Name}}, formed {{.CreationDate}}, {{len .Members}} members"
+        >
+            <div class="card-img-wrap loading">
+                <img
+                    class="card-img"
+                    src="{{.Image}}"
+                    alt="{{.Name}}"
+                    loading="lazy"
+                    onload="this.classList.add('loaded'); this.parentElement.classList.remove('loading')"
+                    onerror="this.parentElement.classList.remove('loading')"
+                >
+            </div>
+            <div class="card-body">
+                <div class="card-row">
+                    <span class="card-id">#{{printf "%02d" .ID}}</span>
+                    <span class="card-year">Est. {{.CreationDate}}</span>
+                </div>
+                <div class="card-name">{{.Name}}</div>
+                <div class="card-members">
+                    <span class="dot"></span>
+                    {{len .Members}} member{{if gt (len .Members) 1}}s{{end}}
+                </div>
+            </div>
+        </a>
+        {{end}}
+
+        <div class="empty"        id="empty"        role="alert"></div>
+        <div class="error-banner" id="error-banner" role="alert"></div>
+
+    </div>
+</main>
+
+<footer>
+    <span>GROUPIE TRACKER</span>
+    <span>GROUPIETRACKERS API</span>
+</footer>
+
+<script>
+(function () {
+    const searchEl   = document.getElementById('search');
+    const clearBtn   = document.getElementById('clear-btn');
+    const countEl    = document.getElementById('result-count');
+    const spinner    = document.getElementById('spinner');
+    const grid       = document.getElementById('grid');
+    const emptyEl    = document.getElementById('empty');
+    const errorEl    = document.getElementById('error-banner');
+    const sortBtns   = document.querySelectorAll('.sort-btn');
+
+    // Stagger initial cards
+    document.querySelectorAll('.card').forEach((c, i) => {
+        c.style.animationDelay = (i * 35) + 'ms';
+    });
+
+    // ── Card builder — mirrors the Go template HTML exactly ──
+    // Expected JSON shape from /search: [{id, name, image, creationDate, members: []}]
+    function buildCard(a, delay) {
+        const memberCount = Array.isArray(a.members) ? a.members.length : 0;
+        const plural      = memberCount !== 1 ? 's' : '';
+        const id          = String(a.id).padStart(2, '0');
+
+        const el = document.createElement('a');
+        el.className  = 'card';
+        el.href       = `/artist?id=${a.id}`;
+        el.dataset.name    = a.name;
+        el.dataset.year    = a.creationDate;
+        el.dataset.members = memberCount;
+        el.dataset.id      = a.id;
+        el.tabIndex   = 0;
+        el.setAttribute('aria-label', `${a.name}, formed ${a.creationDate}, ${memberCount} member${plural}`);
+        el.style.animationDelay = delay + 'ms';
+
+        el.innerHTML = `
+            <div class="card-img-wrap loading">
+                <img
+                    class="card-img"
+                    src="${a.image}"
+                    alt="${a.name}"
+                    loading="lazy"
+                    onload="this.classList.add('loaded'); this.parentElement.classList.remove('loading')"
+                    onerror="this.parentElement.classList.remove('loading')"
+                >
+            </div>
+            <div class="card-body">
+                <div class="card-row">
+                    <span class="card-id">#${id}</span>
+                    <span class="card-year">Est. ${a.creationDate}</span>
+                </div>
+                <div class="card-name">${a.name}</div>
+                <div class="card-members">
+                    <span class="dot"></span>
+                    ${memberCount} member${plural}
+                </div>
+            </div>`;
+
+        // Re-attach focus tracker for keyboard nav
+        el.addEventListener('focus', () => {
+            currentIdx = getVisible().indexOf(el);
+        });
+
+        return el;
+    }
+
+    function getCards()   { return [...grid.querySelectorAll('.card')]; }
+    function getVisible() { return getCards().filter(c => c.style.display !== 'none'); }
+
+    // ── Server-side search ──
+    let debounceTimer;
+    let currentIdx = -1;
+
+    function runSearch() {
+        const q = searchEl.value.trim();
+        clearBtn.classList.toggle('visible', q.length > 0);
+        errorEl.classList.remove('visible');
+
+        // Rule 3: show spinner while waiting
+        spinner.classList.add('active');
+
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            fetch(`/search?q=${encodeURIComponent(q)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`Server responded ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    spinner.classList.remove('active');
+
+                    // Remove old cards, keep sentinel divs
+                    getCards().forEach(c => c.remove());
+
+                    if (!data || data.length === 0) {
+                        countEl.textContent = 0;
+                        emptyEl.style.display = 'block';
+                        emptyEl.innerHTML = `
+                            <div class="empty-title">No Artists Found</div>
+                            <div class="empty-sub">Try a different name &nbsp;·&nbsp; press <kbd>Esc</kbd> to reset</div>`;
+                        return;
+                    }
+
+                    emptyEl.style.display = 'none';
+                    countEl.textContent   = data.length;
+                    currentIdx = -1;
+
+                    data.forEach((artist, i) => {
+                        grid.insertBefore(buildCard(artist, i * 35), emptyEl);
+                    });
+                })
+                .catch(err => {
+                    spinner.classList.remove('active');
+                    // Rule 5: visible error with explanation
+                    errorEl.classList.add('visible');
+                    errorEl.textContent = `Search failed — ${err.message}`;
+                });
+        }, 250); // 250ms debounce — avoids a request on every keystroke
+    }
+
+    searchEl.addEventListener('input', runSearch);
+
+    // ── Clear (Rule 6) ──
+    clearBtn.addEventListener('click', () => {
+        searchEl.value = '';
+        runSearch();
+        searchEl.focus();
+    });
+
+    // ── Sort (Rule 7) — works on whatever cards are currently in the grid ──
+    sortBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            sortBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+            btn.classList.add('active');
+            btn.setAttribute('aria-pressed', 'true');
+
+            const type  = btn.dataset.sort;
+            const cards = getCards();
+            if      (type === 'az')   cards.sort((a, b) => a.dataset.name.localeCompare(b.dataset.name));
+            else if (type === 'za')   cards.sort((a, b) => b.dataset.name.localeCompare(a.dataset.name));
+            else if (type === 'year') cards.sort((a, b) => +a.dataset.year - +b.dataset.year);
+            else                      cards.sort((a, b) => +a.dataset.id   - +b.dataset.id);
+
+            cards.forEach(c => grid.insertBefore(c, emptyEl));
+        });
+    });
+
+    // ── Keyboard navigation (Rule 2) ──
+    document.addEventListener('keydown', e => {
+        const inSearch = document.activeElement === searchEl;
+        const vis      = getVisible();
+
+        if (e.key === '/' && !inSearch) {
+            e.preventDefault();
+            searchEl.focus();
+            searchEl.select();
+            return;
+        }
+
+        if (e.key === 'Escape') {
+            if (searchEl.value.length > 0) {
+                searchEl.value = '';
+                runSearch();
+                searchEl.focus();
+            } else {
+                searchEl.blur();
+                currentIdx = -1;
+            }
+            return;
+        }
+
+        if (inSearch) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            currentIdx = Math.min(currentIdx + 1, vis.length - 1);
+            vis[currentIdx]?.focus();
+        }
+
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            currentIdx = Math.max(currentIdx - 1, 0);
+            vis[currentIdx]?.focus();
+        }
+    });
+
+    // Sync index on Tab
+    getCards().forEach(c => {
+        c.addEventListener('focus', () => { currentIdx = getVisible().indexOf(c); });
+    });
+
+})();
+</script>
+
+</body>
+</html>

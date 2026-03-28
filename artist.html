@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Artist.Name}} — Groupie Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --black:      #0a0a0a;
+            --surface:    #111111;
+            --surface2:   #181818;
+            --border:     #1e1e1e;
+            --gold:       #c8a84b;
+            --gold-dim:   #8a7033;
+            --gold-faint: #1e1a0a;
+            --white:      #f0ece3;
+            --muted:      #6b6560;
+            --radius:     4px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--black);
+            color: var(--white);
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 300;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        /* ── Rule 2: Skip link ── */
+        .skip-link {
+            position: absolute; top: -40px; left: 1rem; z-index: 200;
+            background: var(--gold); color: var(--black);
+            padding: 0.5rem 1rem; border-radius: var(--radius);
+            font-size: 0.85rem; font-weight: 500; text-decoration: none;
+            transition: top 0.15s;
+        }
+        .skip-link:focus { top: 0.5rem; }
+
+        /* ── Rule 3: Focus ring ── */
+        :focus-visible {
+            outline: 2px solid var(--gold);
+            outline-offset: 2px;
+        }
+
+        /* ── Nav ── */
+        /* Rule 1: same nav structure as index.html */
+        nav {
+            position: relative; z-index: 10;
+            padding: 1.4rem 4rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.4rem;
+            letter-spacing: 0.1em;
+            color: var(--white);
+            text-decoration: none;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        /* Rule 2: keyboard shortcut hint on artist page */
+        .kbd-hint {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.64rem;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+        }
+
+        kbd {
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.1em 0.4em;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.64rem;
+            color: var(--white);
+            line-height: 1.5;
+        }
+
+        /* Rule 6: prominent back button */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.12em;
+            padding: 0.5rem 0.85rem;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
+        }
+        .back-btn:hover {
+            color: var(--white);
+            border-color: var(--gold-dim);
+            background: var(--gold-faint);
+        }
+
+        /* ── Rule 4: Breadcrumb (closure / orientation) ── */
+        .breadcrumb {
+            position: relative; z-index: 10;
+            padding: 0.7rem 4rem;
+            border-bottom: 1px solid var(--border);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .breadcrumb a {
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .breadcrumb a:hover { color: var(--gold); }
+
+        .breadcrumb-sep { color: var(--border); }
+        .breadcrumb-current { color: var(--white); }
+
+        /* ── Hero ── */
+        .hero {
+            position: relative; z-index: 10;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            border-bottom: 1px solid var(--border);
+            min-height: 460px;
+        }
+
+        .hero-img-wrap {
+            position: relative;
+            overflow: hidden;
+            background: var(--surface2);
+        }
+
+        /* Rule 3: skeleton while image loads */
+        .hero-img-wrap.loading::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            animation: shimmer 1.6s infinite;
+        }
+
+        @keyframes shimmer {
+            from { transform: translateX(-100%); }
+            to   { transform: translateX(100%); }
+        }
+
+        .hero-img {
+            width: 100%; height: 100%;
+            object-fit: cover; display: block;
+            filter: saturate(0.65) contrast(1.15);
+            opacity: 0;
+            transition: opacity 0.4s;
+            animation: heroReveal 0.8s ease both;
+        }
+
+        .hero-img.loaded { opacity: 1; }
+
+        @keyframes heroReveal {
+            from { transform: scale(1.06); }
+            to   { transform: scale(1); }
+        }
+
+        .hero-img-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to right, transparent 65%, var(--black));
+            pointer-events: none;
+        }
+
+        .hero-info {
+            padding: 3rem 4rem 3rem 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            animation: fadeIn 0.55s 0.2s both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(16px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        .hero-tag {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--gold);
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            margin-bottom: 0.9rem;
+        }
+
+        .hero-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(3rem, 6vw, 6rem);
+            line-height: 0.88;
+            letter-spacing: 0.03em;
+            margin-bottom: 2rem;
+        }
+
+        /* ── Rule 8: all key facts in one scan ── */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .meta-item label {
+            display: block;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.62rem;
+            color: var(--muted);
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .meta-item span {
+            font-size: 0.95rem;
+            font-weight: 400;
+            color: var(--white);
+        }
+
+        .members-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .member-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 0.28rem 0.85rem;
+            font-size: 0.8rem;
+            color: var(--white);
+            transition: border-color 0.2s;
+        }
+        .member-chip::before {
+            content: '';
+            display: inline-block;
+            width: 5px; height: 5px;
+            background: var(--gold);
+            border-radius: 50%;
+        }
+        .member-chip:hover { border-color: var(--gold-dim); }
+
+        /* ── Tour dates section ── */
+        .tours-section {
+            position: relative; z-index: 10;
+            padding: 3.5rem 4rem 5rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2rem;
+            letter-spacing: 0.06em;
+        }
+
+        .section-meta {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--gold);
+            letter-spacing: 0.12em;
+        }
+
+        /* Rule 7: sort for venues */
+        .venue-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            margin-left: auto;
+        }
+
+        .venue-sort-label {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.12em;
+            margin-right: 0.2rem;
+        }
+
+        .vsort-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.63rem;
+            letter-spacing: 0.06em;
+            padding: 0.35rem 0.65rem;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
+        }
+        .vsort-btn:hover { color: var(--white); background: var(--surface2); }
+        .vsort-btn.active {
+            color: var(--gold);
+            border-color: var(--gold-dim);
+            background: var(--gold-faint);
+        }
+
+        .venues-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .venue-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.4rem;
+            transition: border-color 0.2s;
+            animation: fadeUp 0.4s both;
+        }
+        .venue-card:hover { border-color: var(--gold-dim); }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .venue-location {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--gold);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .venue-location::before {
+            content: '◎';
+            font-size: 0.65rem;
+        }
+
+        .venue-dates { display: flex; flex-direction: column; gap: 0.35rem; }
+
+        .venue-date {
+            font-size: 0.85rem;
+            color: var(--white);
+            padding: 0.28rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+        .venue-date:last-child { border-bottom: none; }
+        .venue-date::before {
+            content: '';
+            display: inline-block;
+            width: 3px; height: 3px;
+            background: var(--gold-dim);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ── Rule 5: Empty tour state ── */
+        .no-tours {
+            grid-column: 1 / -1;
+            padding: 3.5rem;
+            text-align: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .no-tours-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.4rem;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .no-tours-sub {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+        }
+
+        /* ── Footer ── */
+        footer {
+            position: relative; z-index: 10;
+            border-top: 1px solid var(--border);
+            padding: 1.2rem 4rem;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.67rem;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        @media (max-width: 900px) {
+            .hero { grid-template-columns: 1fr; }
+            .hero-img-wrap { height: 320px; }
+            .hero-img-overlay { background: linear-gradient(to top, var(--black) 0%, transparent 55%); }
+            .hero-info { padding: 2rem 1.5rem; }
+        }
+
+        @media (max-width: 600px) {
+            nav, .breadcrumb, .tours-section, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+            .meta-grid { grid-template-columns: 1fr; }
+            .venues-grid { grid-template-columns: 1fr; }
+            .kbd-hint { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Rule 2: skip link -->
+<a href="#tour-section" class="skip-link">Skip to tour dates</a>
+
+<!-- Rule 1: same nav structure as index -->
+<nav>
+    <a class="nav-brand" href="/">GROUPIE TRACKER</a>
+    <div class="nav-right">
+        <!-- Rule 2: keyboard shortcut shown -->
+        <span class="kbd-hint"><kbd>B</kbd> to go back</span>
+        <!-- Rule 6: prominent, labelled back button -->
+        <a class="back-btn" href="/" id="back-btn" aria-label="Back to all artists">
+            ← ALL ARTISTS
+        </a>
+    </div>
+</nav>
+
+<!-- Rule 4: breadcrumb for positional closure -->
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/">Home</a>
+    <span class="breadcrumb-sep" aria-hidden="true">›</span>
+    <span class="breadcrumb-current" aria-current="page">{{.Artist.Name}}</span>
+</nav>
+
+<section class="hero">
+    <div class="hero-img-wrap loading" id="hero-wrap">
+        <!-- Rule 3: image loading skeleton + error fallback -->
+        <img
+            class="hero-img"
+            id="hero-img"
+            src="{{.Artist.Image}}"
+            alt="Photo of {{.Artist.Name}}"
+            onload="this.classList.add('loaded'); document.getElementById('hero-wrap').classList.remove('loading')"
+            onerror="document.getElementById('hero-wrap').classList.remove('loading'); this.alt='Image unavailable'"
+        >
+        <div class="hero-img-overlay" aria-hidden="true"></div>
+    </div>
+
+    <div class="hero-info">
+        <div class="hero-tag">Artist Profile</div>
+        <h1 class="hero-name">{{.Artist.Name}}</h1>
+
+        <!-- Rule 8: all key facts visible at once, no scrolling needed -->
+        <div class="meta-grid">
+            <div class="meta-item">
+                <label>Founded</label>
+                <span>{{.Artist.CreationDate}}</span>
+            </div>
+            <div class="meta-item">
+                <label>First Album</label>
+                <span>{{.Artist.FirstAlbum}}</span>
+            </div>
+            <div class="meta-item" style="grid-column: 1 / -1;">
+                <label>Members ({{len .Artist.Members}})</label>
+                <div class="members-wrap">
+                    {{range .Artist.Members}}
+                    <span class="member-chip">{{.}}</span>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="tours-section" id="tour-section" aria-labelledby="tours-heading">
+    <div class="section-header">
+        <h2 class="section-title" id="tours-heading">Tour Dates</h2>
+        <span class="section-meta" id="venue-count" aria-live="polite"></span>
+
+        <!-- Rule 7: user controls venue sort -->
+        <div class="venue-controls" role="group" aria-label="Sort venues">
+            <span class="venue-sort-label">SORT</span>
+            <button class="vsort-btn active" data-vsort="default" aria-pressed="true">Default</button>
+            <button class="vsort-btn" data-vsort="az" aria-pressed="false">A → Z</button>
+        </div>
+    </div>
+
+    <div class="venues-grid" id="venues-grid">
+        {{if .Relation.DatesLocations}}
+            {{range $location, $dates := .Relation.DatesLocations}}
+            <div class="venue-card" data-location="{{$location}}">
+                <div class="venue-location">{{$location}}</div>
+                <div class="venue-dates">
+                    {{range $dates}}
+                    <div class="venue-date">{{.}}</div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+        {{else}}
+            <!-- Rule 5: graceful empty state instead of silence -->
+            <div class="no-tours">
+                <div class="no-tours-title">No Tour Dates Available</div>
+                <div class="no-tours-sub">Check back later for upcoming shows</div>
+            </div>
+        {{end}}
+    </div>
+</section>
+
+<footer>
+    <span>GROUPIE TRACKER</span>
+    <span>GROUPIETRACKERS API</span>
+</footer>
+
+<script>
+(function () {
+    // Stagger venue cards
+    document.querySelectorAll('.venue-card').forEach((c, i) => {
+        c.style.animationDelay = (i * 45) + 'ms';
+    });
+
+    // Rule 3: venue count feedback
+    const cards = document.querySelectorAll('.venue-card');
+    const countEl = document.getElementById('venue-count');
+    if (countEl) countEl.textContent = cards.length + ' VENUE' + (cards.length !== 1 ? 'S' : '');
+
+    // Rule 7: venue sort
+    const grid = document.getElementById('venues-grid');
+    document.querySelectorAll('.vsort-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.vsort-btn').forEach(b => {
+                b.classList.remove('active');
+                b.setAttribute('aria-pressed', 'false');
+            });
+            btn.classList.add('active');
+            btn.setAttribute('aria-pressed', 'true');
+
+            const sorted = [...document.querySelectorAll('.venue-card')];
+            if (btn.dataset.vsort === 'az') {
+                sorted.sort((a, b) => a.dataset.location.localeCompare(b.dataset.location));
+            } else {
+                sorted.sort((a, b) => a.compareDocumentPosition(b) & 4 ? -1 : 1);
+            }
+            sorted.forEach(c => grid.appendChild(c));
+        });
+    });
+
+    // Rule 2: keyboard shortcut — B goes back
+    document.addEventListener('keydown', e => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'b' || e.key === 'B') {
+            document.getElementById('back-btn').click();
+        }
+    });
+
+})();
+</script>
+
+</body>
+</html>
