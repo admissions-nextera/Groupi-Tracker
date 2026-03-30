@@ -11,7 +11,6 @@ func main() {
 		log.Fatalf("Could not initialize data: %v", err)
 	}
 
-	// 2. Setup routes
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/", HomeHandler)
 	http.HandleFunc("/artist", ArtistHandler)
